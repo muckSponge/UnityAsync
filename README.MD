@@ -1,4 +1,4 @@
-#UnityAsync
+# UnityAsync
 UnityAsync is a coroutine framework for Unity built around the async API. This is not only a more efficient and effective replacement of Unity's IEnumerator coroutines, but also seamlessly integrates Unity with .NET 4+ asynchronous APIs.
 
 With this library you can:
@@ -8,7 +8,7 @@ With this library you can:
 * Easily switch sync contexts (main to background and vice-versa)
 * Define your own custom await instructions (allocation free)
 * Return results at the end of your coroutine
-#Performance
+# Performance
 Rest assured; UnityAsync coroutines will generally always perform better than Unity's built-in coroutines because:
 * They rarely cause heap allocations
 * They don't weave in and out of native code
@@ -18,8 +18,8 @@ Benchmarks with 100,000 simultaneous update loop coroutines show a performance i
 
 The single downside is that if you want to nest multiple coroutines inside each other, you must store a reference to them, which means returning a `Task` object. This causes a 226 byte heap allocation, whereas Unity's coroutines allocate less memory (but they still allocate on the heap). This often isn't a problem because nested coroutines rarely execute in their entirety every frame and these allocations are still tiny.
 
-#Usage
-##Replacing existing coroutines
+# Usage
+## Replacing existing coroutines
 Let's say we want to replace a pretty straight-forward update loop IEnumerator coroutine:
 ```c#
 using UnityEngine;
@@ -61,9 +61,9 @@ void Start()
 
 ...
 ```
-Easy-peasy, right? WaitForFrames is an `IAwaitInstruction`. When you await it, it spawns a `Continuation<T>`, which is (automatically) inserted into a list and evaluated every frame until it is finished; in this case it will take one frame. We could return Task instead of void if we wanted to store the coroutine.
+Easy-peasy, right? WaitForFrames is an `IAwaitInstruction`. When you await it, it spawns a `Continuation<T>`, which is (automatically) inserted into a queue and evaluated every frame until it is finished; in this case it will take one frame. We could return Task instead of void if we wanted to store the coroutine.
 
-##Returning a result
+## Returning a result
 Let's say we have some work we want to perform across the main thread, but it's too much to perform in a single frame. We can create a coroutine for this and return the result of the work once it is finished.
 ```c#
 using UnityEngine;
@@ -100,7 +100,7 @@ async void Start()
 ```
 We are awaiting the result in Start so it needs to be an async method (this doesn't impact on how Unity calls it). We now return `Task<int>` and the result is available after 10 frames.
 
-##Switching contexts
+## Switching contexts
 Sometimes you'll want to perform some task on the thread pool and return to the main thread once this is completed without blocking. This could be done via `Task.ConfigureAwait` but now you can await directly on a `SynchronizationContext` which makes it super easy to swap back and forth:
 ```c#
 using UnityAsync;
@@ -125,7 +125,7 @@ async void Start()
 ```
 `Await` actually contains many shortcut functions to streamline your code.
 
-##ConfigureAwait
+## ConfigureAwait
 Just like with `Task`s, UnityAsync `Continuation<T>`s can be configured. You can set the scheduler (Update, LateUpdate, FixedUpdate) and also link its lifespan to a `UnityEngine.Object` or `CancellationToken`.
 ```c#
 using UnityEngine;
@@ -147,8 +147,8 @@ async void Start()
 ...
 
 ```
-##Yielding a task
-You may run into a situation where some of your coroutine code is async, but it is called from an `IEnumerator`. In such a situation you can use `Task.AsYieldInstruction` or `Task<>.AsYieldInstruction`.
+## Yielding a task
+You may run into a situation where some of your coroutine code is async, but it is called from an `IEnumerator`. In such a situation you can use `Task.AsYieldInstruction` or `Task<TResult>.AsYieldInstruction`.
 ```c#
 using UnityEngine;
 using UnityAsync;
@@ -175,7 +175,7 @@ async Task WaitForMouse()
 
 ```
 
-#Await instructions / awaitables
+# Await instructions / awaitables
 
 Built-in:
 * `WaitForFrames`
@@ -197,7 +197,7 @@ Others:
 
 *Will spin up a Unity `Coroutine`, causing allocations.
 
-** Very small delegate allocation.
+**Very small delegate allocation.
 
 Anything that implements `IAwaitInstruction` can be awaited and will be evaluated in Update, LateUpdate, or FixedUpdate. This is how the built-in await instructions are implemented. The advantage over `Task`s or `CustomYieldInstruction`s is they don't cause any allocations if implemented as structs.
 # Custom await instructions
