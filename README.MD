@@ -16,7 +16,7 @@ Rest assured; UnityAsync coroutines will generally always perform better than Un
 
 Benchmarks with 100,000 simultaneous update loop coroutines show a performance increase of over 150% (that's 2.5x), and this doesn't test against `YieldInstructions`. A test with uncached `WaitForSeconds` using a random number as input yields a performance increase of over 290% (3.9x). The benchmarks included the time it took to instantiate the coroutines.
 
-The single downside is that if you want to nest multiple coroutines inside each other, you must store a reference to them, which means returning a `Task` object. This causes a 226 byte heap allocation, whereas Unity's coroutines allocate less memory (but they still allocate on the heap). This often isn't a problem because nested coroutines rarely execute in their entirety every frame and these allocations are still tiny.
+The single downside is that if you want to nest multiple coroutines inside each other, you must store a reference to them, which means returning a `Task` object. This causes a 336 byte heap allocation, whereas Unity's coroutines allocate less memory (but they still allocate on the heap). This often isn't a problem because nested coroutines rarely execute in their entirety every frame and these allocations are still tiny.
 
 # Usage
 ## Replacing existing coroutines
