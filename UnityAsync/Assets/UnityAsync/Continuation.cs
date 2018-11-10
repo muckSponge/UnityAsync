@@ -1,0 +1,119 @@
+﻿using System;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using Object = UnityEngine.Object;
+
+namespace UnityAsync
+{
+	public interface IContinuation
+	{
+		bool Evaluate();
+		FrameScheduler Scheduler { get; }
+	}
+
+	/// <summary>
+	/// Encapsulates an <see cref="UnityAsync.IAwaitInstruction"/> with additional information about how the instruction
+	/// will be queued and executed. Continuations are intended to be awaited after or shortly after instantiation.
+	/// </summary>
+	/// <typeparam name="T">The type of <see cref="UnityAsync.IAwaitInstruction"/> to encapsulate.</typeparam>
+	public struct Continuation<T> : IContinuation, INotifyCompletion where T : IAwaitInstruction
+	{
+		Object owner;
+		CancellationToken cancellationToken;
+
+		/// <summary>
+		/// Evaluate the encapsulated <see cref="UnityAsync.IAwaitInstruction"/> to determine whether the continuation
+		/// is finished and can continue. Will evaluate to true if its owner is destroyed or its cancellation token has
+		/// been cancelled.
+		/// </summary>
+		/// <returns></returns>
+		public bool Evaluate()
+		{
+			if(!owner || cancellationToken.IsCancellationRequested || instruction.IsCompleted())
+			{
+				continuation();
+				return true;
+			}
+
+			return false;
+		}
+
+		public FrameScheduler Scheduler { get; private set; }
+
+		T instruction;
+		Action continuation;
+
+		public Continuation(T inst)
+		{
+			instruction = inst;
+			continuation = null;
+			owner = AsyncManager.Instance;
+			Scheduler = FrameScheduler.Update;
+		}
+
+		public bool IsCompleted => false;
+
+		public void OnCompleted(Action continuation)
+		{
+			this.continuation = continuation;
+			AsyncManager.AddContinuation(this);
+		}
+
+		/// <summary>
+		/// Link the continuation's lifespan to a <see cref="UnityEngine.Object"/> and configure the type of update
+		/// cycle it should be evaluated on.
+		/// </summary>
+		/// <returns>A new continuation with updated params.</returns>
+		public Continuation<T> ConfigureAwait(Object owner, FrameScheduler scheduler)
+		{
+			this.owner = owner;
+			Scheduler = scheduler;
+			return this;
+		}
+
+		/// <summary>
+		/// Link the continuation's lifespan to a <see cref="UnityEngine.Object"/>.
+		/// </summary>
+		/// <returns>A new continuation with updated params.</returns>
+		public Continuation<T> ConfigureAwait(Object owner)
+		{
+			this.owner = owner;
+			return this;
+		}
+
+		/// <summary>
+		/// Configure the type of update cycle it should be evaluated on.
+		/// </summary>
+		/// <returns>A new continuation with updated params.</returns>
+		public Continuation<T> ConfigureAwait(FrameScheduler scheduler)
+		{
+			Scheduler = scheduler;
+			return this;
+		}
+		
+		/// <summary>
+		/// Link the continuation's lifespan to a <see cref="System.Threading.CancellationToken"/> and configure the
+		/// type of update cycle it should be evaluated on.
+		/// </summary>
+		/// <returns>A new continuation with updated params.</returns>
+		public Continuation<T> ConfigureAwait(CancellationToken cancellationToken, FrameScheduler scheduler)
+		{
+			this.cancellationToken = cancellationToken;
+			Scheduler = scheduler;
+			return this;
+		}
+		
+		/// <summary>
+		/// Link the continuation's lifespan to a <see cref="System.Threading.CancellationToken"/>.
+		/// </summary>
+		/// <returns>A new continuation with updated params.</returns>
+		public Continuation<T> ConfigureAwait(CancellationToken cancellationToken)
+		{
+			this.cancellationToken = cancellationToken;
+			return this;
+		}
+
+		public void GetResult() { }
+		public Continuation<T> GetAwaiter() => this;
+	}
+}
