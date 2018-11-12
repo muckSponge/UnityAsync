@@ -51,6 +51,31 @@ namespace UnityAsync
 			Scheduler = FrameScheduler.Update;
 		}
 
+		public Continuation(T inst, FrameScheduler scheduler)
+		{
+			instruction = inst;
+			continuation = null;
+			owner = AsyncManager.Instance;
+			Scheduler = scheduler;
+		}
+		
+		public Continuation(T inst, CancellationToken cancellationToken, FrameScheduler scheduler)
+		{
+			instruction = inst;
+			continuation = null;
+			owner = AsyncManager.Instance;
+			this.cancellationToken = cancellationToken;
+			Scheduler = scheduler;
+		}
+		
+		public Continuation(T inst, Object owner, FrameScheduler scheduler)
+		{
+			instruction = inst;
+			continuation = null;
+			this.owner = owner;
+			Scheduler = scheduler;
+		}
+
 		public bool IsCompleted => false;
 
 		public void OnCompleted(Action continuation)
@@ -64,6 +89,7 @@ namespace UnityAsync
 		/// cycle it should be evaluated on.
 		/// </summary>
 		/// <returns>A new continuation with updated params.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Continuation<T> ConfigureAwait(Object owner, FrameScheduler scheduler)
 		{
 			this.owner = owner;
@@ -75,6 +101,7 @@ namespace UnityAsync
 		/// Link the continuation's lifespan to a <see cref="UnityEngine.Object"/>.
 		/// </summary>
 		/// <returns>A new continuation with updated params.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Continuation<T> ConfigureAwait(Object owner)
 		{
 			this.owner = owner;
@@ -85,6 +112,7 @@ namespace UnityAsync
 		/// Configure the type of update cycle it should be evaluated on.
 		/// </summary>
 		/// <returns>A new continuation with updated params.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Continuation<T> ConfigureAwait(FrameScheduler scheduler)
 		{
 			Scheduler = scheduler;
@@ -96,6 +124,7 @@ namespace UnityAsync
 		/// type of update cycle it should be evaluated on.
 		/// </summary>
 		/// <returns>A new continuation with updated params.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Continuation<T> ConfigureAwait(CancellationToken cancellationToken, FrameScheduler scheduler)
 		{
 			this.cancellationToken = cancellationToken;
@@ -107,6 +136,7 @@ namespace UnityAsync
 		/// Link the continuation's lifespan to a <see cref="System.Threading.CancellationToken"/>.
 		/// </summary>
 		/// <returns>A new continuation with updated params.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Continuation<T> ConfigureAwait(CancellationToken cancellationToken)
 		{
 			this.cancellationToken = cancellationToken;
@@ -114,6 +144,8 @@ namespace UnityAsync
 		}
 
 		public void GetResult() { }
+		
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Continuation<T> GetAwaiter() => this;
 	}
 }
