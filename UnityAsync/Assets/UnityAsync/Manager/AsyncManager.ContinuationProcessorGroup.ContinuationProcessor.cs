@@ -1,43 +1,53 @@
-using System.Collections.Generic;
-
 namespace UnityAsync
 {
 	public partial class AsyncManager
 	{
 		partial class ContinuationProcessorGroup
 		{
+			const int MaxQueueSize = 500000;
+			
 			class ContinuationProcessor<T> : IContinuationProcessor where T : IContinuation
 			{
 				public static ContinuationProcessor<T> instance;
 
-				Queue<T> currentQueue;
-				Queue<T> futureQueue;
+				T[] currentQueue;
+				T[] futureQueue;
+
+				int futureCount;
 
 				public ContinuationProcessor()
 				{
-					currentQueue = new Queue<T>(10);
-					futureQueue = new Queue<T>(10);
+					currentQueue = new T[MaxQueueSize];
+					futureQueue = new T[MaxQueueSize];
 				}
 
 				public void Process()
 				{
+					int count = futureCount;
+					futureCount = 0;
+					
 					// swap queues
 					var tmp = currentQueue;
 					currentQueue = futureQueue;
 					futureQueue = tmp;
-					
-					int count = currentQueue.Count;
 
 					for(int i = 0; i < count; ++i)
 					{
-						var c = currentQueue.Dequeue();
+						var c = currentQueue[i];
 
 						if(!c.Evaluate())
-							futureQueue.Enqueue(c);
+						{
+							futureQueue[futureCount] = c;
+							++futureCount;
+						}
 					}
 				}
 
-				public void Add(T cont) => futureQueue.Enqueue(cont);
+				public void Add(T cont)
+				{
+					futureQueue[futureCount] = cont;
+					++futureCount;
+				}
 			}
 		}
 	}
