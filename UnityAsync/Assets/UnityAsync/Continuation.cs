@@ -22,16 +22,25 @@ namespace UnityAsync
 		CancellationToken cancellationToken;
 
 		/// <summary>
-		/// Evaluate the encapsulated <see cref="UnityAsync.IAwaitInstruction"/> to determine whether the continuation
-		/// is finished and can continue. Will evaluate to true if its owner is destroyed or its cancellation token has
-		/// been cancelled.
+		/// Evaluate the encapsulated <see cref="UnityAsync.IAwaitInstruction"/>. If the instruction is finished, the
+		/// continuation delegate is invoked and the method returns <code>true</code>. If the owner is destroyed or a
+		/// cancellation was requested, the method will return true and will not invoke the continuation delegate.
+		/// Otherwise, the method will return false, meaning the <see cref="UnityAsync.IAwaitInstruction"/> is not yet
+		/// finished.
 		/// </summary>
-		/// <returns></returns>
+		/// <returns>
+		/// <code>true</code> if the <see cref="UnityAsync.IAwaitInstruction"/> is finished or cancelled, otherwise
+		/// false.
+		/// </returns>
 		public bool Evaluate()
 		{
-			if(!owner || cancellationToken.IsCancellationRequested || instruction.IsCompleted())
+			if(!owner || cancellationToken.IsCancellationRequested)
+				return true;
+			
+			if(instruction.IsCompleted())
 			{
 				continuation();
+				
 				return true;
 			}
 
