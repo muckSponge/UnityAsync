@@ -61,7 +61,9 @@ void Start()
 
 ...
 ```
-Easy-peasy, right? WaitForFrames is an `IAwaitInstruction`. When you await it, it spawns a `Continuation<T>`, which is (automatically) inserted into a queue and evaluated every frame until it is finished; in this case it will take one frame. We could return Task instead of void if we wanted to store the coroutine.
+Easy-peasy, right? WaitForFrames is an `IAwaitInstruction`. When you await it, it spawns a `Continuation<T>`, which is (automatically) inserted into a queue and evaluated every frame until it is finished; in this case it will take one frame. Once finished, whatever is after the `IAwaitInstruction` is invoked. We could return `Task` instead of `void` if we wanted to store the coroutine for nesting.
+
+If you want to link the lifetime of an async coroutine (or part of the coroutine) to a `UnityEngine.Object`, like the built-in `Coroutine`s do, see the ConfigureAwait section.
 
 ## Returning a result
 Let's say we have some work we want to perform across the main thread, but it's too much to perform in a single frame. We can create a coroutine for this and return the result of the work once it is finished.
@@ -126,7 +128,7 @@ async void Start()
 `Await` actually contains many shortcut functions to streamline your code.
 
 ## ConfigureAwait
-Just like with `Task`s, UnityAsync `Continuation<T>`s can be configured. You can set the scheduler (Update, LateUpdate, FixedUpdate) and also link its lifespan to a `UnityEngine.Object` or `CancellationToken`.
+Just like with `Task`s, UnityAsync `Continuation<T>`s can be configured. You can set the scheduler (Update, LateUpdate, FixedUpdate) and also link its lifespan to a `UnityEngine.Object` or `CancellationToken`. Anything after the `await` line will not be reached if the `Continuation` was cancelled (either by its linked `UnityEngine.Object` being destroyed or a cancellation requested on the token.
 ```c#
 using UnityEngine;
 using UnityAsync;
@@ -141,7 +143,7 @@ async void Start()
 	// time is evaluated every fixed update
 	await Await.Seconds(10).ConfigureAwait(this, FrameScheduler.FixedUpdate);
 	
-	// ...we are now in fixed update
+	// ...we are now in fixed update (assuming this MonoBehaviour was not destroyed)
 }
 
 ...
@@ -181,23 +183,25 @@ Built-in:
 * `WaitForFrames`
 * `WaitForSeconds`
 * `WaitForUnscaledSeconds`
-* `WaitUntil`
-* `WaitWhile`
+* `WaitUntil`<sup>1</sup>
+* `WaitWhile`<sup>1</sup>
 
 Unity:
-* `IEnumerator`*
-* `YieldInstruction`*
+* `IEnumerator`<sup>2</sup>
+* `YieldInstruction`<sup>2</sup>
 * `AsyncOperation`
-* `ResourceRequest`**
+* `ResourceRequest`<sup>3</sup>
 
 Others:
 * `Task`
 * `Task<>`
 * …anything that implements `GetAwaiter()`
 
-*Will spin up a Unity `Coroutine`, causing allocations.
+<sup>1</sup>May cause a delegate closure.
 
-**Very small delegate allocation.
+<sup>2</sup>Will spin up a Unity `Coroutine`, causing allocations.
+
+<sup>3</sup>Very small delegate allocation.
 
 Anything that implements `IAwaitInstruction` can be awaited and will be evaluated in Update, LateUpdate, or FixedUpdate. This is how the built-in await instructions are implemented. The advantage over `Task`s or `CustomYieldInstruction`s is they don't cause any allocations if implemented as structs.
 # Custom await instructions
