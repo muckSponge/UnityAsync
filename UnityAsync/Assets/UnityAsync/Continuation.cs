@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace UnityAsync
@@ -18,33 +19,54 @@ namespace UnityAsync
 	/// <typeparam name="T">The type of <see cref="UnityAsync.IAwaitInstruction"/> to encapsulate.</typeparam>
 	public struct Continuation<T> : IContinuation, INotifyCompletion where T : IAwaitInstruction
 	{
+		static Exception exception;
+		
 		Object owner;
 		CancellationToken cancellationToken;
 
 		/// <summary>
 		/// Evaluate the encapsulated <see cref="UnityAsync.IAwaitInstruction"/>. If the instruction is finished, the
-		/// continuation delegate is invoked and the method returns <code>true</code>. If the owner is destroyed or a
-		/// cancellation was requested, the method will return true and will not invoke the continuation delegate.
-		/// Otherwise, the method will return false, meaning the <see cref="UnityAsync.IAwaitInstruction"/> is not yet
-		/// finished.
+		/// continuation delegate is invoked and the method returns <code>true</code>. If the owner is destroyed, the
+		/// method will return true without invoking the continuation delegate. If it was cancelled, an exception is
+		/// is thrown when the continuation delegate is invoked. Otherwise, returns false (i.e. the instruction is not
+		/// finished).
 		/// </summary>
 		/// <returns>
-		/// <code>true</code> if the <see cref="UnityAsync.IAwaitInstruction"/> is finished or cancelled, otherwise
-		/// false.
+		/// <code>true</code> if the <see cref="UnityAsync.IAwaitInstruction"/> is finished, its owner destroyed,
+		/// or has been cancelled, otherwise <code>false</code>.
 		/// </returns>
 		public bool Evaluate()
 		{
-			if(!owner || cancellationToken.IsCancellationRequested)
-				return true;
-			
-			if(instruction.IsCompleted())
+			try
 			{
-				continuation();
+				// if cancelled, throw exception
+				cancellationToken.ThrowIfCancellationRequested();
 				
+				// if owner is destroyed, behaves like a UnityEngine.Coroutine, ie:
+				// "With this object's death, the thread of prophecy is severed. Restore a saved game to restore the
+				// weave of fate, or persist in the doomed world you have created."
+				if(!owner)
+					return true;
+
+				// if not completed, return false to put it back into a queue for next frame
+				if(!instruction.IsCompleted())
+					return false;
+			}
+			catch(Exception e)
+			{
+				// store exception in static field
+				exception = e;
+				
+				// exception is rethrown in GetResult, at start of continuation
+				continuation();
+
 				return true;
 			}
-
-			return false;
+			
+			// if we get here, it completed without exceptions and we can call continuation and be done with it
+			continuation();
+			
+			return true;
 		}
 
 		public FrameScheduler Scheduler { get; private set; }
@@ -57,6 +79,7 @@ namespace UnityAsync
 			instruction = inst;
 			continuation = null;
 			owner = AsyncManager.Instance;
+			exception = null;
 			Scheduler = FrameScheduler.Update;
 		}
 
@@ -65,6 +88,7 @@ namespace UnityAsync
 			instruction = inst;
 			continuation = null;
 			owner = AsyncManager.Instance;
+			exception = null;
 			Scheduler = scheduler;
 		}
 		
@@ -73,6 +97,7 @@ namespace UnityAsync
 			instruction = inst;
 			continuation = null;
 			owner = AsyncManager.Instance;
+			exception = null;
 			this.cancellationToken = cancellationToken;
 			Scheduler = scheduler;
 		}
@@ -82,6 +107,7 @@ namespace UnityAsync
 			instruction = inst;
 			continuation = null;
 			this.owner = owner;
+			exception = null;
 			Scheduler = scheduler;
 		}
 
@@ -152,7 +178,16 @@ namespace UnityAsync
 			return this;
 		}
 
-		public void GetResult() { }
+		public void GetResult()
+		{
+			if(exception != null)
+			{
+				var e = exception;
+				exception = null;
+
+				throw e;
+			}
+		}
 		
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Continuation<T> GetAwaiter() => this;
