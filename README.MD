@@ -182,7 +182,7 @@ async Task WaitForMouse()
 Built-in:
 * `WaitForFrames`
 * `WaitForSeconds`
-* `WaitForUnscaledSeconds`
+* `WaitForSecondsRealtime`
 * `WaitUntil`<sup>1</sup>
 * `WaitWhile`<sup>1</sup>
 
@@ -197,9 +197,9 @@ Others:
 * `Task<>`
 * …anything that implements `GetAwaiter()`
 
-<sup>1</sup>May cause a delegate closure.
+<sup>1</sup>Use the generic variants to pass a state object and avoid closures.
 
-<sup>2</sup>Will spin up a Unity `Coroutine`, causing allocations.
+<sup>2</sup>Will spin up a Unity `Coroutine`, causing allocations. Note, `CustomYieldInstruction` implements `IEnumerator`.
 
 <sup>3</sup>Very small delegate allocation.
 
@@ -212,9 +212,9 @@ public interface IAwaitInstruction
 	bool IsCompleted();
 }
 ```
-It's dead simple, just place your behaviour in IsCompleted and return `true` when your criteria are met. `IsCompleted` will be evaluated every frame (depending on the `FrameScheduler`). Use a struct to avoid unnecessary allocations.
+It's dead simple, just place your behaviour in `IsCompleted` and return `true` when your criteria are met. `IsCompleted` will be evaluated every frame (depending on the `FrameScheduler`). Use a struct to avoid unnecessary allocations.
 
-One more thing to note; you will want to implement `GetAwaiter()` so that the instruction can encapsulate itself in a `Continuation` when awaited. It is the `Continuation` which actually ends up being awaited - as a kind of decoration to make custom await instructions more straight-forward to implement (the alternative is inheritance which causes heap allocations).
+One more thing to note; `GetAwaiter()` is already provided through an extension method so that the instruction can encapsulate itself in an `AwaitInstructionAwaiter` when awaited. It is this struct which actually ends up being awaited - as a kind of decoration to make custom await instructions more straight-forward to implement (the alternative is inheritance which causes heap allocations).
 
 ```c#
 using UnityAsync;
@@ -227,9 +227,8 @@ public struct WaitForTimeSpan : IAwaitInstruction
 	
 	public WaitForFrames(TimeSpan timeSpan)
 	{
+		// we use AsyncManager.currentTime here (and above) because it's slightly more efficient vs Time.time
 		finishFrame = AsyncManager.currentTime + (float)timeSpan.TotalSeconds;
-	}
-	
-	public Continuation<WaitForTimeSpan> GetAwaiter() => new Continuation<WaitForTimeSpan>(this);
+	}	
 }
 ```
