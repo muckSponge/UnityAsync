@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace UnityAsync
+﻿namespace UnityAsync
 {
 	public struct WaitForSecondsRealtime : IAwaitInstruction
 	{
@@ -11,11 +9,6 @@ namespace UnityAsync
 		/// <summary>
 		/// Waits for the specified number of (unscaled) seconds to pass before continuing.
 		/// </summary>
-		public WaitForSecondsRealtime(float seconds)
-		{
-			finishTime = AsyncManager.CurrentUnscaledTime + seconds;
-		}
-		
-		public Continuation<WaitForSecondsRealtime> GetAwaiter() => new Continuation<WaitForSecondsRealtime>(this);
+		public WaitForSecondsRealtime(float seconds) => finishTime = AsyncManager.CurrentUnscaledTime + seconds;
 	}
 }

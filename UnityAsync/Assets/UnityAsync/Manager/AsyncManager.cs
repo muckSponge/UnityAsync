@@ -62,7 +62,7 @@ namespace UnityAsync
 		/// Queues a continuation.
 		/// Intended for internal use only - you shouldn't need to invoke this.
 		/// </summary>
-		public static void AddContinuation<T>(T cont) where T : IContinuation
+		public static void AddContinuation<T>(in T cont) where T : IAwaitInstructionAwaiter
 		{
 			switch(cont.Scheduler)
 			{
@@ -83,7 +83,7 @@ namespace UnityAsync
 		/// <summary>
 		/// Start a coroutine from any context without requiring a MonoBehaviour.
 		/// </summary>
-		public static new Coroutine StartCoroutine(IEnumerator coroutine) => ((MonoBehaviour)Instance).StartCoroutine(coroutine);
+		public new static Coroutine StartCoroutine(IEnumerator coroutine) => ((MonoBehaviour)Instance).StartCoroutine(coroutine);
 
 		void Update()
 		{

@@ -1,9 +1,5 @@
 ﻿using System;
 
-#if UNITY_EDITOR
-using UnityEngine;
-#endif
-
 namespace UnityAsync
 {
 	public struct WaitWhile : IAwaitInstruction
@@ -19,15 +15,10 @@ namespace UnityAsync
 		{
 			#if UNITY_EDITOR
 			if(condition == null)
-			{
-				condition = () => true;
-				Debug.LogError($"{nameof(condition)} should not be null. This check will only appear in edit mode.");
-			}
+				throw new ArgumentNullException(nameof(condition), "This check only occurs in edit mode.");
 			#endif
-			
+
 			this.condition = condition;
 		}
-		
-		public Continuation<WaitWhile> GetAwaiter() => new Continuation<WaitWhile>(this);
 	}
 }

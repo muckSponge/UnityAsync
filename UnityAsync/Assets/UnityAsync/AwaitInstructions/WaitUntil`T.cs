@@ -2,16 +2,17 @@
 
 namespace UnityAsync
 {
-	public struct WaitUntil : IAwaitInstruction
+	public struct WaitUntil<TState> : IAwaitInstruction
 	{
-		readonly Func<bool> condition;
+		readonly Func<TState, bool> condition;
+		readonly TState state;
 
-		bool IAwaitInstruction.IsCompleted() => condition();
+		bool IAwaitInstruction.IsCompleted() => condition(state);
 
 		/// <summary>
 		/// Waits until the condition returns true before continuing.
 		/// </summary>
-		public WaitUntil(Func<bool> condition)
+		public WaitUntil(TState state, Func<TState, bool> condition)
 		{
 			#if UNITY_EDITOR
 			if(condition == null)
@@ -19,6 +20,7 @@ namespace UnityAsync
 			#endif
 			
 			this.condition = condition;
+			this.state = state;
 		}
 	}
 }

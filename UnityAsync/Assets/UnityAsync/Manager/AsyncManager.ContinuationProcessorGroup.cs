@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace UnityAsync
 {
@@ -6,25 +7,28 @@ namespace UnityAsync
 	{
 		partial class ContinuationProcessorGroup
 		{
+			const int InitialCapacity = 1 << 10;
+			
 			interface IContinuationProcessor
 			{
 				void Process();
 			}
 
-			List<IContinuationProcessor> processors;
+			readonly List<IContinuationProcessor> processors;
 
 			public ContinuationProcessorGroup()
 			{
 				processors = new List<IContinuationProcessor>(16);
 			}
 
-			public void Add<T>(T cont) where T : IContinuation
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			public void Add<T>(in T cont) where T : IAwaitInstructionAwaiter
 			{
 				var p = ContinuationProcessor<T>.instance;
 
 				if(p == null)
 				{
-					p = ContinuationProcessor<T>.instance = new ContinuationProcessor<T>();
+					p = ContinuationProcessor<T>.instance = new ContinuationProcessor<T>(InitialCapacity);
 					processors.Add(ContinuationProcessor<T>.instance);
 				}
 

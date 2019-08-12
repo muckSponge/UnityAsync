@@ -1,24 +1,29 @@
+using System;
+using System.Runtime.CompilerServices;
+
 namespace UnityAsync
 {
 	public partial class AsyncManager
 	{
 		partial class ContinuationProcessorGroup
 		{
-			const int MaxQueueSize = 500000;
-			
-			class ContinuationProcessor<T> : IContinuationProcessor where T : IContinuation
+			const int MaxQueueSize = 1 << 16;
+
+			class ContinuationProcessor<T> : IContinuationProcessor where T : IAwaitInstructionAwaiter
 			{
 				public static ContinuationProcessor<T> instance;
 
-				T[] currentQueue;
-				T[] futureQueue;
+				T[] currentQueue, futureQueue;
+				int futureCount, maxIndex;
 
-				int futureCount;
-
-				public ContinuationProcessor()
+				public ContinuationProcessor(int capacity)
 				{
-					currentQueue = new T[MaxQueueSize];
-					futureQueue = new T[MaxQueueSize];
+					AssertQueueSize(capacity);
+					
+					maxIndex = capacity - 1;
+					
+					currentQueue = new T[capacity];
+					futureQueue = new T[capacity];
 				}
 
 				public void Process()
@@ -33,7 +38,7 @@ namespace UnityAsync
 
 					for(int i = 0; i < count; ++i)
 					{
-						var c = currentQueue[i];
+						ref var c = ref currentQueue[i];
 
 						if(!c.Evaluate())
 						{
@@ -41,12 +46,34 @@ namespace UnityAsync
 							++futureCount;
 						}
 					}
+					
+					Array.Clear(currentQueue, 0, count);
 				}
 
-				public void Add(T cont)
+				[MethodImpl(MethodImplOptions.AggressiveInlining)]
+				public void Add(in T cont)
 				{
+					if(futureCount == maxIndex)
+					{
+						AssertQueueSize(futureCount + 1);
+						
+						int newQueueSize = Math.Min(MaxQueueSize, futureQueue.Length);
+					
+						Array.Resize(ref futureQueue, newQueueSize);
+						Array.Resize(ref currentQueue, newQueueSize);
+					
+						maxIndex = newQueueSize - 1;
+					}
+					
 					futureQueue[futureCount] = cont;
 					++futureCount;
+				}
+
+				[MethodImpl(MethodImplOptions.AggressiveInlining)]
+				static void AssertQueueSize(int queueSize)
+				{
+					if(queueSize > MaxQueueSize)
+						throw new InvalidOperationException($"Cannot exceed queue size of {MaxQueueSize}.");
 				}
 			}
 		}

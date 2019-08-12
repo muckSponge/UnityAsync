@@ -25,7 +25,5 @@ namespace UnityAsync
 			
 			finishFrame = AsyncManager.CurrentFrameCount + count;
 		}
-		
-		public Continuation<WaitForFrames> GetAwaiter() => new Continuation<WaitForFrames>(this);
 	}
 }

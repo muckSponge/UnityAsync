@@ -13,10 +13,7 @@ namespace UnityAsync
 	{
 		readonly Task task;
 
-		public TaskYieldInstruction(Task task)
-		{
-			this.task = task;
-		}
+		public TaskYieldInstruction(Task task) => this.task = task;
 
 		public override bool keepWaiting => !task.IsCompleted;
 	}
@@ -28,10 +25,7 @@ namespace UnityAsync
 	{
 		readonly Task<TResult> task;
 
-		public TaskYieldInstruction(Task<TResult> task)
-		{
-			this.task = task;
-		}
+		public TaskYieldInstruction(Task<TResult> task) => this.task = task;
 
 		object IEnumerator.Current => Current;
 		
@@ -39,14 +33,10 @@ namespace UnityAsync
 		/// Returns the encapsulated <see cref="System.Threading.Tasks.Task{TResult}"/>'s result if it has completed, otherwise the
 		/// default TResult value.
 		/// </summary>
-		public TResult Current => task.IsCompleted ? task.Result : default(TResult);
+		public TResult Current => task.IsCompleted ? task.Result : default;
 
 		public void Dispose() => task.Dispose();
 		public bool MoveNext() => !task.IsCompleted;
-
-		public void Reset()
-		{
-			throw new NotSupportedException();
-		}
+		public void Reset() => throw new NotSupportedException();
 	}
 }

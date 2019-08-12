@@ -1,6 +1,6 @@
 namespace UnityAsync
 {
-	public enum FrameScheduler { Update, LateUpdate, FixedUpdate }
+	public enum FrameScheduler : byte { Update, LateUpdate, FixedUpdate }
 
 	/// <summary>
 	/// Allows awaitable instructions to be implemented in a similar fashion to
