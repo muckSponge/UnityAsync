@@ -128,7 +128,7 @@ async void Start()
 `Await` actually contains many shortcut functions to streamline your code.
 
 ## ConfigureAwait
-Just like with `Task`s, UnityAsync `Continuation<T>`s can be configured. You can set the scheduler (Update, LateUpdate, FixedUpdate) and also link its lifespan to a `UnityEngine.Object` or `CancellationToken`. Anything after the `await` line will not be reached if the `Continuation` was cancelled (either by its linked `UnityEngine.Object` being destroyed or a cancellation requested on the token.
+Just like with `Task`s, UnityAsync `IAwaitInstruction`s can be configured. You can set the scheduler (Update, LateUpdate, FixedUpdate) and also link its lifespan to a `UnityEngine.Object` and/or `CancellationToken`. Anything after the `await` line will not be reached if the `IAwaitInstruction`'s linked `UnityEngine.Object` was destroyed. If a cancellation was requested, an exception is thrown after the `await` line, which can be handled as you would when a `Task` is cancelled.
 ```c#
 using UnityEngine;
 using UnityAsync;
@@ -143,7 +143,19 @@ async void Start()
 	// time is evaluated every fixed update
 	await Await.Seconds(10).ConfigureAwait(this, FrameScheduler.FixedUpdate);
 	
-	// ...we are now in fixed update (assuming this MonoBehaviour was not destroyed)
+	// ... if the calling MonoBehaviour was destroyed, we won't get this far
+	// if it is still alive, we'll be in FixedUpdate
+	
+	var c = new CancellationSource(100);
+	
+	try
+	{
+		await Await.Seconds(10).ConfigureAwait(c.Token);
+	}
+	catch(OperationCancelledException)
+	{
+		// exception will be caught here after 100ms
+	}
 }
 
 ...
