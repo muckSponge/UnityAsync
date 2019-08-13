@@ -57,7 +57,7 @@ namespace UnityAsync
 					{
 						AssertQueueSize(futureCount + 1);
 						
-						int newQueueSize = Math.Min(MaxQueueSize, futureQueue.Length);
+						int newQueueSize = Math.Min(MaxQueueSize, futureQueue.Length * 3 / 2);
 					
 						Array.Resize(ref futureQueue, newQueueSize);
 						Array.Resize(ref currentQueue, newQueueSize);
