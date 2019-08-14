@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace UnityAsync
 {
@@ -53,20 +54,27 @@ namespace UnityAsync
 				[MethodImpl(MethodImplOptions.AggressiveInlining)]
 				public void Add(in T cont)
 				{
-					if(futureCount == maxIndex)
+					try
 					{
-						AssertQueueSize(futureCount + 1);
+						if(futureCount >= maxIndex)
+						{
+							AssertQueueSize(futureCount + 1);
+							
+							int newQueueSize = Math.Min(MaxQueueSize, futureQueue.Length * 3 / 2);
 						
-						int newQueueSize = Math.Min(MaxQueueSize, futureQueue.Length * 3 / 2);
-					
-						Array.Resize(ref futureQueue, newQueueSize);
-						Array.Resize(ref currentQueue, newQueueSize);
-					
-						maxIndex = newQueueSize - 1;
+							Array.Resize(ref futureQueue, newQueueSize);
+							Array.Resize(ref currentQueue, newQueueSize);
+						
+							maxIndex = newQueueSize - 1;
+						}
+
+						futureQueue[futureCount] = cont;
+						++futureCount;
 					}
-					
-					futureQueue[futureCount] = cont;
-					++futureCount;
+					catch(Exception e)
+					{
+						Debug.LogException(e);
+					}
 				}
 
 				[MethodImpl(MethodImplOptions.AggressiveInlining)]
