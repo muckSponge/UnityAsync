@@ -15,7 +15,7 @@ namespace UnityAsync
 				public static ContinuationProcessor<T> instance;
 
 				T[] currentQueue, futureQueue;
-				int futureCount, maxIndex;
+				int currentCount, currentIndex, futureCount, maxIndex;
 
 				public ContinuationProcessor(int capacity)
 				{
@@ -29,7 +29,7 @@ namespace UnityAsync
 
 				public void Process()
 				{
-					int count = futureCount;
+					currentCount = futureCount;
 					futureCount = 0;
 					
 					// swap queues
@@ -37,18 +37,22 @@ namespace UnityAsync
 					currentQueue = futureQueue;
 					futureQueue = tmp;
 
-					for(int i = 0; i < count; ++i)
+					for(; currentIndex < currentCount; ++currentIndex)
 					{
-						ref var c = ref currentQueue[i];
+						ref var c = ref currentQueue[currentIndex];
 
 						if(!c.Evaluate())
 						{
+							// this is hottest path so we don't do a bounds check here (see Add)
 							futureQueue[futureCount] = c;
 							++futureCount;
 						}
 					}
+
+					currentIndex = 0;
+					currentCount = 0;
 					
-					Array.Clear(currentQueue, 0, count);
+					Array.Clear(currentQueue, 0, currentCount);
 				}
 
 				[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -56,11 +60,16 @@ namespace UnityAsync
 				{
 					try
 					{
-						if(futureCount >= maxIndex)
+						// we might have awaiters yet to be processed this frame; when they are re-added we skip any
+						// bounds checks as an optimisation, so we need to make sure the queue has enough space to
+						// re-add them all in case none of them have finished
+						int potentialFutureCount = futureCount + currentCount - currentIndex;
+						
+						if(potentialFutureCount >= maxIndex)
 						{
-							AssertQueueSize(futureCount + 1);
+							AssertQueueSize(potentialFutureCount + 1);
 							
-							int newQueueSize = Math.Min(MaxQueueSize, futureQueue.Length * 3 / 2);
+							int newQueueSize = Math.Min(MaxQueueSize, Math.Max(potentialFutureCount, futureQueue.Length * 3 / 2));
 						
 							Array.Resize(ref futureQueue, newQueueSize);
 							Array.Resize(ref currentQueue, newQueueSize);
