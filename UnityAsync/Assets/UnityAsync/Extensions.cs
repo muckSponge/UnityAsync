@@ -11,15 +11,21 @@ namespace UnityAsync
 {
 	public static class Extensions
 	{
+		#if !ENABLE_IL2CPP
+		
 		static readonly Func<Object, IntPtr> ObjectPtrGetter;
 		
-		static Extensions()
-		{
-			ReflectionUtility.GenerateFieldGetter("m_CachedPtr", out ObjectPtrGetter);
-		}
+		static Extensions() => ReflectionUtility.GenerateFieldGetter("m_CachedPtr", out ObjectPtrGetter);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		internal static bool IsAlive(this Object o) => ObjectPtrGetter(o) != IntPtr.Zero;
+		
+		#else
+		
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		internal static bool IsAlive(this Object o) => o != null;
+		
+		#endif
 		
 		/// <summary>
 		/// Link the <see cref="UnityAsync.IAwaitInstruction"/>'s lifespan to a <see cref="UnityEngine.Object"/> and
