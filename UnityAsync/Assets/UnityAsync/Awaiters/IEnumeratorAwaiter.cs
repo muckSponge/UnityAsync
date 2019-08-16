@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace UnityAsync.Awaiters
 {
-	struct IEnumeratorAwaiter : INotifyCompletion
+	public struct IEnumeratorAwaiter : INotifyCompletion
 	{
 		static readonly SendOrPostCallback postCallback = state => ((Action)state)();
 

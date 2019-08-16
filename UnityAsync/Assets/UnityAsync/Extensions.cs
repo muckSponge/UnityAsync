@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityAsync
 {
-	static class Extensions
+	public static class Extensions
 	{
 		static readonly Func<Object, IntPtr> ObjectPtrGetter;
 		
@@ -19,7 +19,7 @@ namespace UnityAsync
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static bool IsAlive(this Object o) => ObjectPtrGetter(o) != IntPtr.Zero;
+		internal static bool IsAlive(this Object o) => ObjectPtrGetter(o) != IntPtr.Zero;
 		
 		/// <summary>
 		/// Link the <see cref="UnityAsync.IAwaitInstruction"/>'s lifespan to a <see cref="UnityEngine.Object"/> and

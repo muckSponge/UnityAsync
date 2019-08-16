@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace UnityAsync.Awaiters
 {
-	struct YieldInstructionAwaiter : INotifyCompletion
+	public struct YieldInstructionAwaiter : INotifyCompletion
 	{
 		static readonly SendOrPostCallback postCallback = state => ((Action)state)();
 

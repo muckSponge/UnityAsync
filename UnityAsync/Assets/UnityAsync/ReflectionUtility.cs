@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace UnityAsync
 {
-	public static class ReflectionUtility
+	internal static class ReflectionUtility
 	{
 		public static void GenerateFieldGetter<TTarget, TField>(string field, out Func<TTarget, TField> getter)
 		{
