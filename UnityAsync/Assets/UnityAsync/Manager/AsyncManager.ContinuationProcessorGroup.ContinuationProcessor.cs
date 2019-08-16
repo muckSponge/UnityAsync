@@ -58,6 +58,16 @@ namespace UnityAsync
 				[MethodImpl(MethodImplOptions.AggressiveInlining)]
 				public void Add(in T cont)
 				{
+					if(InUnityContext)
+						AddFast(cont);
+					else
+						AddThreadSafe(cont);
+				}
+
+				// only call in UnitySynchronizationContext - not thread safe
+				[MethodImpl(MethodImplOptions.AggressiveInlining)]
+				void AddFast(in T cont)
+				{
 					try
 					{
 						// we might have awaiters yet to be processed this frame; when they are re-added we skip any
@@ -84,6 +94,15 @@ namespace UnityAsync
 					{
 						Debug.LogException(e);
 					}
+				}
+
+				// use when you may be adding an awaiter from outside of UnitySynchronizationContext
+				[MethodImpl(MethodImplOptions.AggressiveInlining)]
+				async void AddThreadSafe(T cont)
+				{
+					await UnitySyncContext;
+
+					AddFast(cont);
 				}
 
 				[MethodImpl(MethodImplOptions.AggressiveInlining)]
