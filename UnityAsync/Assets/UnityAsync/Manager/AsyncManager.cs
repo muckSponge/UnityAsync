@@ -55,7 +55,19 @@ namespace UnityAsync
 			fixedUpdates = new ContinuationProcessorGroup();
 
 			Instance = new GameObject("Async Manager").AddComponent<AsyncManager>();
-			DontDestroyOnLoad(Instance);
+			if(!Application.isEditor) // DontDestroyOnLoad can not be called in editor mode
+				DontDestroyOnLoad(Instance);
+		}
+
+		/// <summary>
+		/// Initializes the manager explicitly. Typically used when running Unity Editor tests (NUnit unit tests).
+		/// </summary>
+		public static void InitializeForEditorTests()
+		{
+			Initialize();
+			
+			// Do not run tasks in background when testing:
+			BackgroundSyncContext = UnitySyncContext;
 		}
 
 		/// <summary>
