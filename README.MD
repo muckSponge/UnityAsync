@@ -244,3 +244,19 @@ public struct WaitForTimeSpan : IAwaitInstruction
 	}	
 }
 ```
+
+# Usage with Unity EditorTests (unit tests with NUnit)
+
+When running unit tests, `AsyncManager` is not automatically initialized. Call `AsyncManager.InitializeForEditorTests()` in your test OneTimeSetUp method, for example like this:
+
+```c#
+// In your test class
+
+[OneTimeSetUp]
+public void OneTimeSetUp()
+{
+	AsyncManager.InitializeForEditorTests();
+
+	// Other setup code here
+}
+```
