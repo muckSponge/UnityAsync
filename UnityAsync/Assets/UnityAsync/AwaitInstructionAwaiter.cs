@@ -47,7 +47,7 @@ namespace UnityAsync
 				// if owner is destroyed, behaves like a UnityEngine.Coroutine, ie:
 				// "With this object's death, the thread of prophecy is severed. Restore a saved game to restore the
 				// weave of fate, or persist in the doomed world you have created."
-				if(!owner.IsAlive())
+				if(!owner)
 					return true;
 
 				// if not completed, return false to put it back into a queue for next frame
