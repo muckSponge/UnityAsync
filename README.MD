@@ -6,21 +6,24 @@ With this library you can:
 * Seamlessly integrate with Task-based and async APIs
 * Integrate with IEnumerator-based coroutines and YieldInstructions
 * Easily switch sync contexts (main to background and vice-versa)
-* Define your own custom await instructions (allocation free)
+* Define your own custom await instructions (allocation free, no boxing!)
 * Return results at the end of your coroutine
 # Performance
-Rest assured; UnityAsync coroutines will generally always perform better than Unity's built-in coroutines because:
+Rest assured; UnityAsync coroutines will generally perform better than Unity's built-in coroutines because:
 * They rarely cause heap allocations
 * They don't weave in and out of native code
 * They don't rely on a monolithic state machine
 
-Benchmarks with 100,000 simultaneous update loop coroutines show a performance increase of over 150% (that's 2.5x), and this doesn't test against `YieldInstructions`. A test with uncached `WaitForSeconds` using a random number as input yields a performance increase of over 290% (3.9x). The benchmarks included the time it took to instantiate the coroutines.
+Comparing with standard `yield return null` update loops, performance is 150% improved. Uncached `WaitForSeconds` loops yield a performance increase of over 290%. The benchmarks included the time it took to instantiate the coroutines.
 
-The single downside is that if you want to nest multiple coroutines inside each other, you must store a reference to them, which means returning a `Task` object. This causes a 336 byte heap allocation, whereas Unity's coroutines allocate less memory (but they still allocate on the heap). This often isn't a problem because nested coroutines rarely execute in their entirety every frame and these allocations are still tiny.
+The one caveat is, in order to store the coroutine, a `Task` object must be allocated. A `Task` object is a bigger allocation compared to a `Coroutine` object. No way around it, if you want to integrate with `Task`-based APIs, you need to use `Tasks`. Often, you just need to fire the coroutine and forget about it, and in such cases, simply use `void` return type to avoid allocations altogether.
 
 # Usage
+## Installation
+Clone the repo into your assets folder or download the [latest release](https://github.com/muckSponge/UnityAsync/releases/latest) and open the .unitypackage.
+
 ## Replacing existing coroutines
-Let's say we want to replace a pretty straight-forward update loop IEnumerator coroutine:
+Let's say we want to replace a pretty straight-forward update loop `IEnumerator` coroutine:
 ```c#
 using UnityEngine;
 using System.Collections;
@@ -41,7 +44,7 @@ void Start()
 ...
 
 ```
-UnityAsync coroutines are defined by async methods, which can return void, `Task`, or `Task<TResult>`:
+UnityAsync coroutines are defined by async methods, which can return `void`, `Task`, or `Task<TResult>`:
 ```c#
 using UnityEngine;
 using UnityAsync;
@@ -100,10 +103,10 @@ async void Start()
 
 ...
 ```
-We are awaiting the result in Start so it needs to be an async method (this doesn't impact on how Unity calls it). We now return `Task<int>` and the result is available after 10 frames.
+We are awaiting the result in `Start()` so it needs to be an async method (this doesn't impact on how Unity calls it). We now return `Task<int>` and the result is available after 10 frames.
 
 ## Switching contexts
-Sometimes you'll want to perform some task on the thread pool and return to the main thread once this is completed without blocking. This could be done via `Task.ConfigureAwait` but now you can await directly on a `SynchronizationContext` which makes it super easy to swap back and forth:
+Sometimes you'll want to perform some task on the thread pool and return to the main thread once this is completed without blocking. This could be done via `Task.ConfigureAwait()` but now you can await directly on a `SynchronizationContext` which makes it super easy to swap back and forth:
 ```c#
 using UnityAsync;
 
@@ -161,6 +164,7 @@ async void Start()
 ...
 
 ```
+
 ## Yielding a task
 You may run into a situation where some of your coroutine code is async, but it is called from an `IEnumerator`. In such a situation you can use `Task.AsYieldInstruction` or `Task<TResult>.AsYieldInstruction`.
 ```c#
@@ -190,7 +194,6 @@ async Task WaitForMouse()
 ```
 
 # Await instructions / awaitables
-
 Built-in:
 * `WaitForFrames`
 * `WaitForSeconds`
@@ -246,7 +249,6 @@ public struct WaitForTimeSpan : IAwaitInstruction
 ```
 
 # Usage with Unity EditorTests (unit tests with NUnit)
-
 When running unit tests, `AsyncManager` is not automatically initialized. Call `AsyncManager.InitializeForEditorTests()` in your test OneTimeSetUp method, for example like this:
 
 ```c#
