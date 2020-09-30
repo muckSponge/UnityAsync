@@ -12,6 +12,7 @@ namespace UnityAsync
 			interface IContinuationProcessor
 			{
 				void Process();
+				void CleanUpStatics();
 			}
 
 			readonly List<IContinuationProcessor> processors;
@@ -39,6 +40,12 @@ namespace UnityAsync
 			{
 				for(int i = 0; i < processors.Count; ++i)
 					processors[i].Process();
+			}
+
+			public void CleanUp()
+			{
+				foreach(var p in processors)
+					p.CleanUpStatics();
 			}
 		}
 	}

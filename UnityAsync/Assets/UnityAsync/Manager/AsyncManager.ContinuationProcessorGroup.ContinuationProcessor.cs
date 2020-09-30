@@ -64,6 +64,11 @@ namespace UnityAsync
 						AddThreadSafe(cont);
 				}
 
+				public void CleanUpStatics()
+				{
+					instance = null;
+				}
+
 				// only call in UnitySynchronizationContext - not thread safe
 				[MethodImpl(MethodImplOptions.AggressiveInlining)]
 				void AddFast(in T cont)

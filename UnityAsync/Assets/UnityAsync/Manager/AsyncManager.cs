@@ -42,9 +42,17 @@ namespace UnityAsync
 		static int unityThreadId, updateCount, lateCount, fixedCount;
 		static ContinuationProcessorGroup updates, lateUpdates, fixedUpdates;
 
-		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 		static void Initialize()
 		{
+			// clear statics
+			
+			CurrentFrameCount = updateCount = lateCount = fixedCount = 0;
+
+			updates?.CleanUp();
+			lateUpdates?.CleanUp();
+			fixedUpdates?.CleanUp();
+		
 			unityThreadId = Thread.CurrentThread.ManagedThreadId;
 			UnitySyncContext = SynchronizationContext.Current;
 
@@ -54,6 +62,9 @@ namespace UnityAsync
 			lateUpdates = new ContinuationProcessorGroup();
 			fixedUpdates = new ContinuationProcessorGroup();
 
+			if(Instance)
+				Destroy(Instance);
+			
 			Instance = new GameObject("Async Manager").AddComponent<AsyncManager>();
 			if(!Application.isEditor) // DontDestroyOnLoad can not be called in editor mode
 				DontDestroyOnLoad(Instance);
