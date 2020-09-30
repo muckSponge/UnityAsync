@@ -55,8 +55,8 @@ namespace UnityAsync
 			fixedUpdates = new ContinuationProcessorGroup();
 
 			Instance = new GameObject("Async Manager").AddComponent<AsyncManager>();
-			if(!Application.isEditor) // DontDestroyOnLoad can not be called in editor mode
-				DontDestroyOnLoad(Instance);
+			
+			DontDestroyOnLoad(Instance);
 		}
 
 		/// <summary>
